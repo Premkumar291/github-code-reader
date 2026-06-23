@@ -6,12 +6,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@octokit/rest": "^22.0.1",
+    "@pinecone-database/pinecone": "^8.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^16.6.1",
+    "ignore": "^7.0.5",
+    "jose": "^6.2.3",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "tsx": "^4.22.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
