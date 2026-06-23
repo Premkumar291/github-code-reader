@@ -14,20 +14,25 @@ async function testHF() {
 
   const payload = JSON.stringify({ inputs: "Hello world" });
 
-  const req = https.request({
-    hostname: ip,
-    port: 443,
-    path: "/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2",
+async function testGroqEmbeddings() {
+  console.log("Testing Groq Embeddings...");
+  const res = await fetch("https://api.groq.com/openai/v1/embeddings", {
     method: "POST",
     headers: {
-      "Host": "api-inference.huggingface.co",
-      "Authorization": `Bearer ${process.env.HF_API_KEY}`,
-      "Content-Type": "application/json",
-      "Content-Length": Buffer.byteLength(payload)
+      "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+      "Content-Type": "application/json"
     },
-    servername: "api-inference.huggingface.co"
-  }, (res) => {
-    console.log("Status:", res.statusCode);
+    body: JSON.stringify({
+      input: "hello world",
+      model: "nomic-embed-text-v1_5"
+    })
+  });
+  console.log("Status:", res.status);
+  const data = await res.json();
+  console.log("Response:", JSON.stringify(data).slice(0, 200));
+}
+
+testGroqEmbeddings();
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => console.log("Response:", data.slice(0, 100)));

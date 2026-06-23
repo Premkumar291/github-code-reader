@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
         // ── Embed & upsert ────────────────────────────────────────────────────
         let embeddedCount = 0;
         const vectors: CodeVector[] = [];
+        const EMBED_BATCH_SIZE = 5; // Lowered to 5 to prevent WebAssembly OOM
 
         for (let i = 0; i < allChunks.length; i += EMBED_BATCH_SIZE) {
           const batch = allChunks.slice(i, i + EMBED_BATCH_SIZE);
@@ -175,6 +176,8 @@ export async function POST(request: NextRequest) {
           let embeddings: number[][];
           try {
             embeddings = await embedBatch(texts);
+            // Yield to the Node.js event loop to allow WebAssembly garbage collection
+            await new Promise((r) => setTimeout(r, 10));
           } catch (embErr) {
             console.error("Embedding batch error, skipping:", embErr);
             continue;
