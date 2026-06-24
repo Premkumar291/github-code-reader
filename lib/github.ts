@@ -77,6 +77,21 @@ export async function fetchRepoFiles(
   repo: string,
   onProgress?: (current: number, total: number) => void
 ): Promise<RepoFile[]> {
+  const result: RepoFile[] = [];
+  for await (const batch of fetchRepoFileBatches(owner, repo, onProgress)) {
+    result.push(...batch);
+  }
+  return result;
+}
+
+/**
+ * Streams indexable files in small batches to keep memory low.
+ */
+export async function* fetchRepoFileBatches(
+  owner: string,
+  repo: string,
+  onProgress?: (current: number, total: number) => void
+): AsyncGenerator<RepoFile[]> {
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
     userAgent: "codebase-assistant/1.0",
@@ -122,13 +137,13 @@ export async function fetchRepoFiles(
     .slice(0, MAX_FILES_PER_REPO);
 
   // 4. Fetch file contents
-  const result: RepoFile[] = [];
   const total = sortedFiles.length;
   let processed = 0;
 
-  const BATCH_SIZE = 10;
+  const BATCH_SIZE = 2;
   for (let i = 0; i < sortedFiles.length; i += BATCH_SIZE) {
     const batch = sortedFiles.slice(i, i + BATCH_SIZE);
+    const batchResults: RepoFile[] = [];
 
     await Promise.all(
       batch.map(async (file) => {
@@ -147,7 +162,7 @@ export async function fetchRepoFiles(
           const content = Buffer.from(blobData.content, "base64").toString("utf-8");
 
           if (!isBinaryContent(content)) {
-            result.push({
+            batchResults.push({
               path: file.path,
               content,
               language: detectLanguage(file.path),
@@ -162,9 +177,11 @@ export async function fetchRepoFiles(
         }
       })
     );
-  }
 
-  return result;
+    if (batchResults.length > 0) {
+      yield batchResults;
+    }
+  }
 }
 
 function getExtension(filePath: string): string {

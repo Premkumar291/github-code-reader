@@ -4,7 +4,7 @@
  * app/(dashboard)/repos/_components/RepoList.tsx
  * Client component: lists repos with delete, status badges, and language stats.
  */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 // ... [skipping interfaces and constants for brevity, but I must provide full replacement of the lines targeted] ...
@@ -68,9 +68,11 @@ export default function RepoList({ initialRepos }: Props) {
   const [deleting, setDeleting] = useState<number | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
+  const [prevInitialRepos, setPrevInitialRepos] = useState(initialRepos);
+  if (initialRepos !== prevInitialRepos) {
+    setPrevInitialRepos(initialRepos);
     setRepos(initialRepos);
-  }, [initialRepos]);
+  }
 
   async function deleteRepo(id: number) {
     if (!confirm("Delete this repo and all its indexed vectors?")) return;

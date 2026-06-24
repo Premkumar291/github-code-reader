@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Allow bcryptjs and other native-like modules to run server-side
-  serverExternalPackages: ["bcryptjs", "@xenova/transformers"],
+  serverExternalPackages: ["bcryptjs"],
 
   // Disable x-powered-by header for security
   poweredByHeader: false,

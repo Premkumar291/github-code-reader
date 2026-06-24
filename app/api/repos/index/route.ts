@@ -17,13 +17,23 @@ import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { verifyJWT, TOKEN_COOKIE_NAME } from "@/lib/auth";
 import { query } from "@/lib/db";
-import { parseGithubUrl, fetchRepoFiles } from "@/lib/github";
+import { parseGithubUrl, fetchRepoFileBatches } from "@/lib/github";
 import { chunkFile } from "@/lib/chunker";
 import { embedBatch } from "@/lib/embeddings";
 import { upsertVectors, type CodeVector } from "@/lib/pinecone";
 
-// Vercel timeout safety: chunk batch size for embedding
-const EMBED_BATCH_SIZE = 20;
+// Vercel timeout safety: Allow up to 60 seconds execution (Hobby tier limit)
+export const maxDuration = 60;
+
+const EMBED_BATCH_SIZE = 4;
+
+type ChunkRecord = {
+  filePath: string;
+  language: string;
+  text: string;
+  lineStart: number;
+  lineEnd: number;
+};
 
 export async function POST(request: NextRequest) {
   const encoder = new TextEncoder();
@@ -111,7 +121,22 @@ export async function POST(request: NextRequest) {
           totalSteps: 4,
         });
 
-        const files = await fetchRepoFiles(owner, repo, (current, total) => {
+        const languageCounts: Record<string, number> = {};
+        let processedFiles = 0;
+        let chunkCount = 0;
+        let upsertedCount = 0;
+        let vectorIndex = 0;
+        let fetchedFiles = 0;
+
+        send(controller, {
+          type: "status",
+          message: "Fetching and processing files in small batches...",
+          step: 3,
+          totalSteps: 4,
+        });
+
+        for await (const fileBatch of fetchRepoFileBatches(owner, repo, (current, total) => {
+          fetchedFiles = total;
           send(controller, {
             type: "progress",
             step: "fetch",
@@ -119,109 +144,94 @@ export async function POST(request: NextRequest) {
             total,
             message: `Fetching files: ${current}/${total}`,
           });
-        });
+        })) {
+          const batchChunks: ChunkRecord[] = [];
 
-        if (files.length === 0) {
+          for (const file of fileBatch) {
+            const chunks = chunkFile(file.content, file.language);
+            for (const chunk of chunks) {
+              batchChunks.push({
+                filePath: file.path,
+                language: file.language,
+                text: chunk.text,
+                lineStart: chunk.lineStart,
+                lineEnd: chunk.lineEnd,
+              });
+            }
+            languageCounts[file.language] = (languageCounts[file.language] ?? 0) + 1;
+          }
+
+          if (fileBatch.length === 0) {
+            continue;
+          }
+
+          processedFiles += fileBatch.length;
+          chunkCount += batchChunks.length;
+          send(controller, {
+            type: "progress",
+            step: "chunk",
+            current: processedFiles,
+            total: fetchedFiles || processedFiles,
+            message: `Chunked ${processedFiles}/${fetchedFiles || processedFiles} files`,
+          });
+
+          for (let i = 0; i < batchChunks.length; i += EMBED_BATCH_SIZE) {
+            const embedBatchChunks = batchChunks.slice(i, i + EMBED_BATCH_SIZE);
+            const texts = embedBatchChunks.map((chunk) => chunk.text);
+
+            let embeddings: number[][];
+            try {
+              embeddings = await embedBatch(texts);
+              await new Promise((resolve) => setTimeout(resolve, 10));
+            } catch (embErr) {
+              console.error("Embedding batch error, skipping:", embErr);
+              continue;
+            }
+
+            const vectors: CodeVector[] = [];
+            for (let j = 0; j < embedBatchChunks.length; j++) {
+              const chunk = embedBatchChunks[j];
+              const embedding = embeddings[j];
+              if (!embedding) continue;
+
+              vectors.push({
+                id: `repo-${repoId}-${vectorIndex++}`, 
+                values: embedding,
+                metadata: {
+                  repoId: repoId!,
+                  filePath: chunk.filePath,
+                  lineStart: chunk.lineStart,
+                  lineEnd: chunk.lineEnd,
+                  language: chunk.language,
+                  text: chunk.text.slice(0, 1500),
+                },
+              });
+            }
+
+            if (vectors.length > 0) {
+              await upsertVectors(vectors);
+              upsertedCount += vectors.length;
+              send(controller, {
+                type: "progress",
+                step: "embed",
+                current: upsertedCount,
+                total: chunkCount,
+                message: `Embedded and stored ${upsertedCount}/${chunkCount} chunks`,
+              });
+            }
+          }
+        }
+
+        if (processedFiles === 0) {
           throw new Error("No indexable files found in this repository.");
         }
 
         send(controller, {
           type: "status",
-          message: `Fetched ${files.length} files. Chunking...`,
-          step: 2,
-          totalSteps: 4,
-        });
-
-        // ── Chunk files ───────────────────────────────────────────────────────
-        const allChunks: Array<{
-          filePath: string;
-          language: string;
-          text: string;
-          lineStart: number;
-          lineEnd: number;
-        }> = [];
-
-        const languageCounts: Record<string, number> = {};
-
-        for (const file of files) {
-          const chunks = chunkFile(file.content, file.language, file.path);
-          for (const chunk of chunks) {
-            allChunks.push({
-              filePath: file.path,
-              language: file.language,
-              text: chunk.text,
-              lineStart: chunk.lineStart,
-              lineEnd: chunk.lineEnd,
-            });
-          }
-          languageCounts[file.language] = (languageCounts[file.language] ?? 0) + 1;
-        }
-
-        send(controller, {
-          type: "status",
-          message: `Created ${allChunks.length} chunks. Generating embeddings...`,
-          step: 3,
-          totalSteps: 4,
-        });
-
-        // ── Embed & upsert ────────────────────────────────────────────────────
-        let embeddedCount = 0;
-        const vectors: CodeVector[] = [];
-        const EMBED_BATCH_SIZE = 5; // Lowered to 5 to prevent WebAssembly OOM
-
-        for (let i = 0; i < allChunks.length; i += EMBED_BATCH_SIZE) {
-          const batch = allChunks.slice(i, i + EMBED_BATCH_SIZE);
-          const texts = batch.map((c) => c.text);
-
-          let embeddings: number[][];
-          try {
-            embeddings = await embedBatch(texts);
-            // Yield to the Node.js event loop to allow WebAssembly garbage collection
-            await new Promise((r) => setTimeout(r, 10));
-          } catch (embErr) {
-            console.error("Embedding batch error, skipping:", embErr);
-            continue;
-          }
-
-          for (let j = 0; j < batch.length; j++) {
-            const chunk = batch[j];
-            const embedding = embeddings[j];
-            if (!embedding) continue;
-
-            vectors.push({
-              id: `repo-${repoId}-${i + j}`,
-              values: embedding,
-              metadata: {
-                repoId: repoId!,
-                filePath: chunk.filePath,
-                lineStart: chunk.lineStart,
-                lineEnd: chunk.lineEnd,
-                language: chunk.language,
-                // Truncate text in metadata to stay under Pinecone's 40KB/record limit
-                text: chunk.text.slice(0, 1500),
-              },
-            });
-          }
-
-          embeddedCount += batch.length;
-          send(controller, {
-            type: "progress",
-            step: "embed",
-            current: embeddedCount,
-            total: allChunks.length,
-            message: `Embedding chunks: ${embeddedCount}/${allChunks.length}`,
-          });
-        }
-
-        // Upsert all vectors to Pinecone
-        send(controller, {
-          type: "status",
-          message: `Upserting ${vectors.length} vectors to Pinecone...`,
+          message: `Upserted ${upsertedCount} vectors to Pinecone...`,
           step: 4,
           totalSteps: 4,
         });
-
-        await upsertVectors(vectors);
 
         // ── Update repo record ────────────────────────────────────────────────
         await query(
@@ -229,16 +239,16 @@ export async function POST(request: NextRequest) {
            SET status = 'ready', indexed_at = NOW(), file_count = $1,
                chunk_count = $2, language_stats = $3, updated_at = NOW()
            WHERE id = $4`,
-          [files.length, vectors.length, JSON.stringify(languageCounts), repoId]
+          [processedFiles, upsertedCount, JSON.stringify(languageCounts), repoId]
         );
 
         send(controller, {
           type: "done",
           repoId,
-          fileCount: files.length,
-          chunkCount: vectors.length,
+          fileCount: processedFiles,
+          chunkCount: upsertedCount,
           languageStats: languageCounts,
-          message: `✅ Indexing complete! ${files.length} files, ${vectors.length} chunks indexed.`,
+          message: `✅ Indexing complete! ${processedFiles} files, ${upsertedCount} chunks indexed.`,
         });
       } catch (error) {
         console.error("[POST /api/repos/index]", error);

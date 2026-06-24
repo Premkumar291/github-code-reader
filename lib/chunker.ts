@@ -39,8 +39,7 @@ const BOUNDARY_PATTERNS: Record<string, RegExp> = {
  */
 export function chunkFile(
   content: string,
-  language: string,
-  filePath: string
+  language: string
 ): CodeChunk[] {
   const lines = content.split("\n");
 
@@ -48,7 +47,7 @@ export function chunkFile(
   if (lines.length <= CHUNK_MAX_LINES) {
     return [
       {
-        text: prefixWithPath(content, filePath),
+        text: content,
         lineStart: 0,
         lineEnd: lines.length - 1,
         language,
@@ -59,10 +58,10 @@ export function chunkFile(
   const pattern = BOUNDARY_PATTERNS[language];
 
   if (pattern) {
-    return chunkByBoundaries(lines, language, filePath, pattern);
+    return chunkByBoundaries(lines, language, pattern);
   }
 
-  return chunkBySlidingWindow(lines, language, filePath);
+  return chunkBySlidingWindow(lines, language);
 }
 
 /**
@@ -72,7 +71,6 @@ export function chunkFile(
 function chunkByBoundaries(
   lines: string[],
   language: string,
-  filePath: string,
   pattern: RegExp
 ): CodeChunk[] {
   const boundaries: number[] = [0];
@@ -100,9 +98,8 @@ function chunkByBoundaries(
     const isLast = b === boundaries.length - 2;
 
     if ((reachedMax || isLast) && groupLines.length >= MIN_CHUNK_LINES) {
-      const text = prefixWithPath(groupLines.join("\n"), filePath);
       chunks.push({
-        text,
+        text: groupLines.join("\n"),
         lineStart: groupStart,
         lineEnd: groupStart + groupLines.length - 1,
         language,
@@ -119,14 +116,14 @@ function chunkByBoundaries(
       const mergedEnd = groupStart + groupLines.length - 1;
       const mergedLines = lines.slice(mergedStart, mergedEnd + 1);
       chunks.push({
-        text: prefixWithPath(mergedLines.join("\n"), filePath),
+        text: mergedLines.join("\n"),
         lineStart: mergedStart,
         lineEnd: mergedEnd,
         language,
       });
     } else {
       chunks.push({
-        text: prefixWithPath(groupLines.join("\n"), filePath),
+        text: groupLines.join("\n"),
         lineStart: groupStart,
         lineEnd: groupStart + groupLines.length - 1,
         language,
@@ -134,7 +131,7 @@ function chunkByBoundaries(
     }
   }
 
-  return chunks.length > 0 ? chunks : chunkBySlidingWindow(lines, language, filePath);
+  return chunks.length > 0 ? chunks : chunkBySlidingWindow(lines, language);
 }
 
 /**
@@ -142,8 +139,7 @@ function chunkByBoundaries(
  */
 function chunkBySlidingWindow(
   lines: string[],
-  language: string,
-  filePath: string
+  language: string
 ): CodeChunk[] {
   const chunks: CodeChunk[] = [];
   let start = 0;
@@ -154,11 +150,15 @@ function chunkBySlidingWindow(
 
     if (section.join("").trim().length > 0) {
       chunks.push({
-        text: prefixWithPath(section.join("\n"), filePath),
+        text: section.join("\n"),
         lineStart: start,
         lineEnd: end,
         language,
       });
+    }
+
+    if (end >= lines.length - 1) {
+      break;
     }
 
     start = end + 1 - CHUNK_OVERLAP_LINES;
@@ -166,12 +166,4 @@ function chunkBySlidingWindow(
   }
 
   return chunks;
-}
-
-/**
- * Prepends the file path as a comment so the LLM knows context.
- * e.g. "// File: src/auth/jwt.ts\n..."
- */
-function prefixWithPath(content: string, filePath: string): string {
-  return `// File: ${filePath}\n${content}`;
 }
