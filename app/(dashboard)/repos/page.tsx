@@ -77,6 +77,49 @@ export default async function ReposPage() {
       {/* Repo list — client component for delete interactions */}
       <RepoList initialRepos={repos} />
 
+      {/* Informational Section explaining project features */}
+      <div className="project-info-section" style={{ marginTop: "3.5rem" }}>
+        <h2 className="section-title">Capabilities & Insights</h2>
+        <div className="info-grid">
+          <div className="info-card card">
+            <div className="info-icon">🔍</div>
+            <h3>Semantic Search</h3>
+            <p>
+              Query your codebase using natural language concepts instead of strict keywords. Find where logic is implemented even if you don't know the exact function names.
+            </p>
+          </div>
+          <div className="info-card card">
+            <div className="info-icon">💬</div>
+            <h3>Contextual Chat</h3>
+            <p>
+              Ask direct questions about application flow, design patterns, or component relationships. Receive accurate explanations synthesized directly from your code files.
+            </p>
+          </div>
+          <div className="info-card card">
+            <div className="info-icon">📄</div>
+            <h3>Exact Citations</h3>
+            <p>
+              Verify every response with file path links and line numbers pointing directly to the source. Instantly navigate to the code that supports each explanation.
+            </p>
+          </div>
+        </div>
+
+        <div className="guide-section card" style={{ marginTop: "2rem" }}>
+          <h3 style={{ marginBottom: "1rem", color: "var(--text-primary)" }}>How to Get the Most Out of Codebase AI</h3>
+          <ul className="guide-list" style={{ display: "flex", flexDirection: "column", gap: "0.875rem", paddingLeft: "1.25rem" }}>
+            <li>
+              <strong>Repository Indexing:</strong> Paste any public GitHub repository URL above. The system recursively traverses, parses, and indexes code blocks to prepare them for query synthesis.
+            </li>
+            <li>
+              <strong>Structured Inquiries:</strong> Ask about code interactions, database schemas, API structures, or authorization patterns. (e.g., <em>"How does token validation work in this app?"</em>)
+            </li>
+            <li>
+              <strong>Feature Discovery:</strong> Identify configuration layers, middleware structures, or entry points by querying high-level flows. (e.g., <em>"Walk me through the user registration database update step."</em>)
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <style>{`
         .repos-page {
           padding: 2rem;
@@ -112,6 +155,55 @@ export default async function ReposPage() {
         }
         .stat-pill-value { font-size: 1.25rem; font-weight: 700; color: var(--accent-primary); }
         .stat-pill-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .section-title {
+          font-size: 1.25rem;
+          font-weight: 650;
+          color: var(--text-primary);
+          margin-bottom: 1.25rem;
+          letter-spacing: -0.01em;
+        }
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        .info-card {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          transition: transform var(--transition-normal);
+        }
+        .info-card:hover {
+          transform: translateY(-2px);
+        }
+        .info-card h3 {
+          font-size: 0.95rem;
+          color: var(--text-primary);
+          font-weight: 600;
+        }
+        .info-card p {
+          font-size: 0.85rem;
+          line-height: 1.5;
+          color: var(--text-secondary);
+        }
+        .info-icon {
+          font-size: 1.5rem;
+          margin-bottom: 0.25rem;
+        }
+        .guide-section {
+          background: var(--bg-glass);
+          border: 1px solid var(--border);
+        }
+        .guide-list li {
+          font-size: 0.875rem;
+          line-height: 1.6;
+          color: var(--text-secondary);
+        }
+        .guide-list strong {
+          color: var(--text-primary);
+        }
       `}</style>
     </div>
   );

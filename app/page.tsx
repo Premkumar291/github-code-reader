@@ -36,7 +36,7 @@ export default function LandingPage() {
       <section className="hero">
         <div className="hero-badge">
           <span className="hero-badge-dot" />
-          Powered by Groq + Hugging Face + Pinecone — 100% Free
+          100% Free & Open Source Codebase Intelligence
         </div>
         <h1 className="hero-title">
           Ask questions about <br/>
@@ -100,16 +100,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stack */}
+      {/* Use Cases */}
       <section className="stack-section">
-        <h2 className="features-title">Built with the best free tools</h2>
-        <div className="stack-grid">
-          {STACK.map((s) => (
-            <div key={s.name} className="stack-item">
-              <div className="stack-item-dot" style={{ background: s.color }} />
+        <h2 className="features-title">Accelerate Your Engineering Workflow</h2>
+        <div className="stack-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          {USE_CASES.map((u) => (
+            <div key={u.title} className="stack-item" style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.5rem" }}>
+              <span style={{ fontSize: "1.5rem" }}>{u.icon}</span>
               <div>
-                <span className="stack-name">{s.name}</span>
-                <span className="stack-desc">{s.desc}</span>
+                <span className="stack-name" style={{ fontSize: "1rem" }}>{u.title}</span>
+                <span className="stack-desc" style={{ marginTop: "0.25rem", color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: "1.5" }}>{u.desc}</span>
               </div>
             </div>
           ))}
@@ -119,7 +119,7 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="landing-cta">
         <h2>Ready to understand your codebase?</h2>
-        <p>Free forever. No credit card. Powered by open-source AI.</p>
+        <p>Free forever. No credit card required. Powered by open-source AI.</p>
         <Link href="/register" className="btn btn-primary btn-lg" id="bottom-cta">
           Get started — it&apos;s free
         </Link>
@@ -128,7 +128,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="landing-footer">
         <span>© 2025 Codebase Assistant</span>
-        <span>Built with Next.js · Neon · Pinecone · Groq · Hugging Face</span>
+        <span>Built for developers, by developers.</span>
       </footer>
 
       <style>{`
@@ -379,12 +379,12 @@ const FEATURES = [
   {
     icon: "🔍",
     title: "Semantic Search",
-    desc: "Find relevant code using natural language, not just keywords. Powered by 384-dim embeddings.",
+    desc: "Find relevant code using natural language, not just keywords. Locate functionality based on intent.",
   },
   {
     icon: "⚡",
     title: "Blazing Fast",
-    desc: "Groq's LPU delivers 500+ tokens/sec. Get answers in seconds, not minutes.",
+    desc: "Get responses in seconds, not minutes. Optimised indexing and query pipelines deliver answers instantly.",
   },
   {
     icon: "📎",
@@ -399,20 +399,29 @@ const FEATURES = [
   {
     icon: "💸",
     title: "100% Free Tier",
-    desc: "Neon + Pinecone + Groq + HF all have generous free tiers. Run at $0/month.",
+    desc: "Explore and query public repositories with generous free usage limits.",
   },
   {
     icon: "🌐",
-    title: "One-Click Deploy",
-    desc: "All API-based. Push to GitHub, import in Vercel, done. No infra to manage.",
+    title: "Easy to Run",
+    desc: "Standard deployment setup. Connect your source code and start chatting immediately.",
   },
 ];
 
-const STACK = [
-  { name: "Next.js 16", desc: "App Router + API Routes", color: "#fff" },
-  { name: "Neon", desc: "Serverless PostgreSQL", color: "#00e599" },
-  { name: "Pinecone", desc: "Vector database", color: "#b298f8" },
-  { name: "Groq", desc: "LLM inference (free)", color: "#f55036" },
-  { name: "Hugging Face", desc: "Embeddings (free)", color: "#ffd21e" },
-  { name: "Vercel", desc: "Zero-config deploy", color: "#fff" },
+const USE_CASES = [
+  {
+    title: "Developer Onboarding",
+    desc: "Get new team members up to speed with unfamiliar codebases in minutes instead of weeks.",
+    icon: "🚀"
+  },
+  {
+    title: "Code Reviews & Audits",
+    desc: "Quickly locate architectural patterns, authentication checks, and dependency structures.",
+    icon: "🛡️"
+  },
+  {
+    title: "Debugging & Exploration",
+    desc: "Ask where features are implemented and trace flows directly across multiple code files.",
+    icon: "🐛"
+  }
 ];
