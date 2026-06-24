@@ -211,12 +211,15 @@ export async function POST(request: NextRequest) {
             if (vectors.length > 0) {
               await upsertVectors(vectors);
               upsertedCount += vectors.length;
+              const estimatedTotalChunks = fetchedFiles && processedFiles 
+                ? Math.round((chunkCount / processedFiles) * fetchedFiles) 
+                : chunkCount;
               send(controller, {
                 type: "progress",
                 step: "embed",
                 current: upsertedCount,
-                total: chunkCount,
-                message: `Embedded and stored ${upsertedCount}/${chunkCount} chunks`,
+                total: estimatedTotalChunks,
+                message: `Embedded and stored ${upsertedCount}/${estimatedTotalChunks} chunks`,
               });
             }
           }

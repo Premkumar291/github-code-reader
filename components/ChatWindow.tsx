@@ -87,6 +87,20 @@ export default function ChatWindow({ repos }: Props) {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Sync selectedRepoId with repoId query param if present
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const repoIdParam = params.get("repoId");
+      if (repoIdParam) {
+        const id = Number(repoIdParam);
+        if (readyRepos.some((r) => r.id === id)) {
+          setSelectedRepoId(id);
+        }
+      }
+    }
+  }, [repos]);
+
   const selectedRepo = repos.find((r) => r.id === selectedRepoId);
 
   async function sendMessage() {

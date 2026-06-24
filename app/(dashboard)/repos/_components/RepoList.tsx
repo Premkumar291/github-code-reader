@@ -135,7 +135,7 @@ export default function RepoList({ initialRepos }: Props) {
               </div>
               <div className="repo-card-actions">
                 {repo.status === "ready" && (
-                  <a href="/chat" className="btn btn-secondary btn-sm" id={`chat-repo-${repo.id}`}>
+                  <a href={`/chat?repoId=${repo.id}`} className="btn btn-secondary btn-sm" id={`chat-repo-${repo.id}`}>
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                     </svg>

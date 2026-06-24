@@ -104,10 +104,10 @@ export default function RepoUploader({ onIndexed }: Props) {
   }
 
   // Progress percentage
-  const fetchProgress = progress.find(
+  const fetchProgress = progress.findLast(
     (p) => p.type === "progress" && p.step === "fetch"
   );
-  const embedProgress = progress.find(
+  const embedProgress = progress.findLast(
     (p) => p.type === "progress" && p.step === "embed"
   );
   const activeProgress = embedProgress ?? fetchProgress;
