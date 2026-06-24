@@ -42,6 +42,7 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body>{children}</body>
     </html>

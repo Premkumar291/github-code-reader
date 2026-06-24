@@ -14,14 +14,8 @@ export default function LandingPage() {
       <nav className="landing-nav">
         <div className="landing-nav-logo">
           <div className="landing-logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                stroke="url(#lG)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-                <linearGradient id="lG" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#6c63ff"/><stop offset="1" stopColor="#9333ea"/>
-                </linearGradient>
-              </defs>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 8l-4 4 4 4M17 8l4 4-4 4M14 4L10 20" />
             </svg>
           </div>
           <span>Codebase Assistant</span>
